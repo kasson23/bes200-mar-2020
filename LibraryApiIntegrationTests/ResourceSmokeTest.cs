@@ -21,8 +21,6 @@ namespace LibraryApiIntegrationTests
         [Theory]
         [InlineData("/books")]
         [InlineData("/books/1")]
-
-
         public async Task GetResourceAndSeeIfTheyAreAlive(string resource)
         {
             var response = await Client.GetAsync(resource);

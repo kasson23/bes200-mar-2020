@@ -17,6 +17,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using LibraryApi.Models;
+using Microsoft.Extensions.Options;
+using System.Text.Json.Serialization;
+using RabbitMqUtils;
 
 namespace LibraryApi
 {
@@ -40,7 +44,14 @@ namespace LibraryApi
             // 1 per http request
             services.AddScoped<IMapBooks, EFSqlBookMapper>();
 
-            services.AddControllers();
+            // Json serilizers if there is any enums
+            services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                });
+
+            // Entity Framework add db context
             services.AddDbContext<LibraryDataContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("LibraryDatabase"))
                 // Don't do this!
@@ -64,6 +75,21 @@ namespace LibraryApi
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 c.IncludeXmlComments(xmlPath);
             });
+
+            // 
+            services.AddDistributedRedisCache(options =>
+            {
+                options.Configuration = Configuration.GetValue<string>("redisHost");
+            });
+            services.AddResponseCaching();
+
+            // Rabbit Messaging Queue
+            services.AddRabbit(Configuration);
+            services.AddScoped<ISendMessageToTheReservationProcessor, RabbitMqReservationProcessor>();
+
+            // MONGO
+            services.Configure<BookstoreDatabaseSettings>(Configuration.GetSection(nameof(BookstoreDatabaseSettings)));
+            services.AddSingleton<IBookstoreDatabaseSettings>(sp => sp.GetRequiredService<IOptions<BookstoreDatabaseSettings>>().Value);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -73,16 +99,28 @@ namespace LibraryApi
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            //
+            app.UseResponseCaching();
+
+            // utilize cors 
+            app.UseCors(options =>
+            {
+                options.AllowAnyOrigin();
+                options.AllowAnyMethod();
+                options.AllowAnyHeader();
+            });
+
+            // swagger documentation
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "Library API");
                 c.RoutePrefix = "docs";
             });
+
             app.UseRouting();
-
             app.UseAuthorization();
-
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();

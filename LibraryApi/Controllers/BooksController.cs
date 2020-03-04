@@ -57,7 +57,6 @@ namespace LibraryApi.Controllers
         public async Task<ActionResult<GetABookResponse>> GetABook(int id)
         {
             GetABookResponse response = await Mapper.GetBookById(id);
-            this.Maybe()
             return this.Maybe(response);
         }
 
