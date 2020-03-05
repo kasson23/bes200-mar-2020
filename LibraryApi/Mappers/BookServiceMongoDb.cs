@@ -11,17 +11,17 @@ namespace LibraryApi.Mappers
 {
 	public class BookServiceMongoDb
 	{
-		private readonly IMongoCollection<Book> _books;
+		private readonly IMongoCollection<BookMongo> _books;
 
 		public BookServiceMongoDb(IBookstoreDatabaseSettings settings)
 		{
 			var client = new MongoClient(settings.ConnectionString);
 			var database = client.GetDatabase(settings.DatabaseName);
-			_books = database.GetCollection<Book>(settings.BooksCollectionName);
+			_books = database.GetCollection<BookMongo>(settings.BooksCollectionName);
 		}
 
 		
-		public List<Book> Get()
+		public List<BookMongo> Get()
 		{
 			return _books.Find(book => book.InInventory == true).ToList();
 		}

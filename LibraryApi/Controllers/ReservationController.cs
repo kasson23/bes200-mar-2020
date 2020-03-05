@@ -22,6 +22,8 @@ namespace LibraryApi.Controllers
             Processor = processor;
         }
 
+        
+
         [HttpPost("reservations")]
         [ValidateModel]
         public async Task<ActionResult> AddAReservation([FromBody] PostReservationRequest reservation)
@@ -62,6 +64,7 @@ namespace LibraryApi.Controllers
 
             return Ok(response);
         }
+
         [HttpGet("/reservations/approved")]
         public async Task<ActionResult> GetAllApprovedReservations()
         {
@@ -71,6 +74,23 @@ namespace LibraryApi.Controllers
 
             return Ok(response);
         }
+
+        [HttpPost("reservations/approved")]
+        public async Task<ActionResult> ReservationApproved([FromBody] GetReservationItemResponse req)
+        {
+            var reservation = await Context.Reservations.Where(r => r.Id == req.Id).SingleOrDefaultAsync();
+            if (reservation == null)
+            {
+                return BadRequest("No pending reservation");
+            }
+            else
+            {
+                reservation.Status = ReservationStatus.Approved;
+                await Context.SaveChangesAsync();
+                return Accepted(); // NoContent() 
+            }
+        }
+
         [HttpGet("/reservations/cancelled")]
         public async Task<ActionResult> GetAllCancelledReservations()
         {
@@ -79,6 +99,22 @@ namespace LibraryApi.Controllers
             response.Data = data.Select(r => MapIt(r)).ToList();
 
             return Ok(response);
+        }
+
+        [HttpPost("reservations/cancelled")]
+        public async Task<ActionResult> ReservationCancelled([FromBody] GetReservationItemResponse req)
+        {
+            var reservation = await Context.Reservations.Where(r => r.Id == req.Id).SingleOrDefaultAsync();
+            if (reservation == null)
+            {
+                return BadRequest("No pending reservation");
+            }
+            else
+            {
+                reservation.Status = ReservationStatus.Cancelled;
+                await Context.SaveChangesAsync();
+                return Accepted(); // NoContent() 
+            }
         }
 
         private GetReservationItemResponse MapIt(Reservation r)

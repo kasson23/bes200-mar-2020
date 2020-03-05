@@ -8,8 +8,6 @@ using System.Threading.Tasks;
 
 namespace LibraryApi.Controllers
 {
-	[Route("")]
-
 	public class BooksMongoController : Controller
 	{
 		private readonly BookServiceMongoDb _bookService;
@@ -21,7 +19,7 @@ namespace LibraryApi.Controllers
 
 
 		[HttpGet("/mongo/books")]
-		public ActionResult<List<Book>> Get()
+		public ActionResult<List<BookMongo>> Get()
 		{
 			return Ok(_bookService.Get());
 		}
